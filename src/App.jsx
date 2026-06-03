@@ -9,15 +9,24 @@ import {
   Bot, Sparkles, BrainCircuit, UserCheck
 } from 'lucide-react';
 
+// --- STANDARD VITE + FIREBASE INITIALIZATION ---
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 
-const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+// Replace these placeholders with your actual Firebase Console configuration keys.
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'naitra-edu-hub';
 
 const CONTACT_PHONE = "9772373002";
 const CONTACT_EMAIL = "naitraeduhub@gmail.com";
@@ -34,9 +43,8 @@ const COURSES_LIST = [
   { title: "Rajasthan Agriculture Supervisor", duration: "6 Months", badge: "Rajasthan", description: "Rajasthan Agriculture Supervisor Exam" }
 ];
 
-// --- GEMINI API INTEGRATION ---
 const callGeminiAPI = async (prompt, retries = 5) => {
-  const apiKey = ""; 
+  const apiKey = "YOUR_GEMINI_API_KEY"; 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
   const payload = {
     contents: [{ parts: [{ text: prompt }] }],
@@ -65,7 +73,6 @@ const callGeminiAPI = async (prompt, retries = 5) => {
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState(null);
   
   // Student Portal Auth State
   const [studentProfile, setStudentProfile] = useState(null);
@@ -74,26 +81,6 @@ export default function App() {
   // Modal State
   const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(COURSES_LIST[0].title);
-
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
-        }
-      } catch (error) {
-        console.error("Auth Error:", error);
-      }
-    };
-    initAuth();
-    
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-    return () => unsubscribe();
-  }, []);
 
   const navigate = (page) => {
     setCurrentPage(page);
@@ -114,18 +101,15 @@ export default function App() {
     { id: 'student-portal', label: 'Online Test' },
   ];
 
-  // Override view for active test
   if (activeTest && studentProfile) {
-    return <TestEngine test={activeTest} studentProfile={studentProfile} onExit={() => setActiveTest(null)} user={user} />;
+    return <TestEngine test={activeTest} studentProfile={studentProfile} onExit={() => setActiveTest(null)} />;
   }
 
   return (
     <div className="min-h-screen flex flex-col font-sans bg-slate-50 text-slate-800 relative">
-      {/* Header / Navigation */}
       <header className="bg-white text-slate-900 sticky top-0 z-40 shadow-sm border-b border-slate-200 transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20 md:h-24">
-            {/* Logo */}
             <div className="flex items-center space-x-3 cursor-pointer group" onClick={() => navigate('home')}>
               <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-2.5 rounded-xl shadow-lg shadow-blue-600/20 group-hover:scale-105 transition-transform">
                 <GraduationCap className="h-8 w-8 text-white" />
@@ -135,7 +119,6 @@ export default function App() {
               </span>
             </div>
 
-            {/* Desktop Navigation */}
             <nav className="hidden lg:flex space-x-8 items-center">
               {navLinks.map((link) => (
                 <button
@@ -161,7 +144,6 @@ export default function App() {
               </div>
             </nav>
 
-            {/* Mobile Menu Button */}
             <div className="lg:hidden flex items-center">
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -201,16 +183,15 @@ export default function App() {
         )}
       </header>
 
-      {/* Main Content Area */}
+      {}
       <main className="flex-grow">
         {currentPage === 'home' && <Home navigate={navigate} openEnrollModal={openEnrollModal} />}
         {currentPage === 'about' && <About openEnrollModal={openEnrollModal} />}
         {currentPage === 'courses' && <Courses openEnrollModal={openEnrollModal} />}
         {currentPage === 'contact' && <Contact openEnrollModal={openEnrollModal} />}
-        {currentPage === 'admin' && <AdminDashboard user={user} />}
+        {currentPage === 'admin' && <AdminDashboard />}
         {currentPage === 'student-portal' && (
            <StudentPortal 
-             user={user} 
              studentProfile={studentProfile} 
              setStudentProfile={setStudentProfile} 
              onStartTest={(test) => setActiveTest(test)} 
@@ -218,7 +199,6 @@ export default function App() {
         )}
       </main>
 
-      {/* Floating Action Buttons */}
       <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-30">
         <a 
           href={`tel:${CONTACT_PHONE}`}
@@ -239,16 +219,13 @@ export default function App() {
         </a>
       </div>
 
-      {/* Admission Form Modal */}
       {isEnrollModalOpen && (
         <AdmissionFormModal 
-          user={user}
           initialCourse={selectedCourse} 
           onClose={() => setIsEnrollModalOpen(false)} 
         />
       )}
 
-      {/* Premium Footer */}
       <footer className="bg-slate-950 text-slate-300 pt-20 pb-10 border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8 mb-16">
           <div className="col-span-1 md:col-span-1">
@@ -304,7 +281,7 @@ export default function App() {
   );
 }
 
-function AdmissionFormModal({ user, initialCourse, onClose }) {
+function AdmissionFormModal({ initialCourse, onClose }) {
   const [formData, setFormData] = useState({
     studentName: '',
     fatherName: '',
@@ -320,7 +297,6 @@ function AdmissionFormModal({ user, initialCourse, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!user) return;
     setIsSubmitting(true);
     
     const randomNum = Math.floor(1000 + Math.random() * 9000);
@@ -333,7 +309,7 @@ function AdmissionFormModal({ user, initialCourse, onClose }) {
     };
 
     try {
-      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'enquiries'), payload);
+      await addDoc(collection(db, 'enquiries'), payload);
       setEnquiryId(newEnquiryId);
       setIsSuccess(true);
       setTimeout(() => {
@@ -348,13 +324,8 @@ function AdmissionFormModal({ user, initialCourse, onClose }) {
   return (
     <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-fade-in relative mt-10 mb-10 border border-slate-200">
-        
-        {/* Header */}
         <div className="bg-gradient-to-r from-blue-700 to-blue-600 p-8 text-white relative">
-          <button 
-            onClick={onClose}
-            className="absolute top-6 right-6 bg-white/20 hover:bg-white/30 p-2 rounded-full transition-colors backdrop-blur-sm"
-          >
+          <button onClick={onClose} className="absolute top-6 right-6 bg-white/20 hover:bg-white/30 p-2 rounded-full transition-colors backdrop-blur-sm">
             <X className="h-5 w-5" />
           </button>
           <div className="bg-white/20 w-12 h-12 rounded-2xl flex items-center justify-center mb-4 backdrop-blur-sm border border-white/10">
@@ -386,68 +357,44 @@ function AdmissionFormModal({ user, initialCourse, onClose }) {
                 <label className="block text-sm font-bold text-slate-700 mb-1.5">Student Name *</label>
                 <div className="relative group">
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                  <input type="text" name="studentName" required value={formData.studentName} onChange={handleChange}
-                    className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 outline-none transition-all bg-slate-50 focus:bg-white font-medium text-slate-900"
-                    placeholder="Enter full name" />
+                  <input type="text" name="studentName" required value={formData.studentName} onChange={handleChange} className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 outline-none transition-all bg-slate-50 focus:bg-white font-medium text-slate-900" placeholder="Enter full name" />
                 </div>
               </div>
-              
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1.5">Father's Name *</label>
                 <div className="relative group">
                   <UserCircle className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                  <input type="text" name="fatherName" required value={formData.fatherName} onChange={handleChange}
-                    className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 outline-none transition-all bg-slate-50 focus:bg-white font-medium text-slate-900"
-                    placeholder="Enter father's name" />
+                  <input type="text" name="fatherName" required value={formData.fatherName} onChange={handleChange} className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 outline-none transition-all bg-slate-50 focus:bg-white font-medium text-slate-900" placeholder="Enter father's name" />
                 </div>
               </div>
-
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1.5">Mobile Number *</label>
                 <div className="relative group">
                   <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                  <input type="tel" name="mobile" required pattern="[0-9]{10}" value={formData.mobile} onChange={handleChange}
-                    className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 outline-none transition-all bg-slate-50 focus:bg-white font-medium text-slate-900"
-                    placeholder="10 digit mobile number" />
+                  <input type="tel" name="mobile" required pattern="[0-9]{10}" value={formData.mobile} onChange={handleChange} className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 outline-none transition-all bg-slate-50 focus:bg-white font-medium text-slate-900" placeholder="10 digit mobile number" />
                 </div>
               </div>
-
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1.5">Select Course *</label>
                 <div className="relative group">
                   <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                  <select name="course" required value={formData.course} onChange={handleChange}
-                    className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 outline-none transition-all bg-slate-50 focus:bg-white appearance-none font-medium text-slate-900"
-                  >
+                  <select name="course" required value={formData.course} onChange={handleChange} className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 outline-none transition-all bg-slate-50 focus:bg-white appearance-none font-medium text-slate-900">
                     {COURSES_LIST.map((c, i) => <option key={i} value={c.title}>{c.title}</option>)}
                   </select>
                 </div>
               </div>
-
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1.5">Village / City *</label>
                 <div className="relative group">
                   <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                  <input type="text" name="city" required value={formData.city} onChange={handleChange}
-                    className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 outline-none transition-all bg-slate-50 focus:bg-white font-medium text-slate-900"
-                    placeholder="e.g. Jaipur" />
+                  <input type="text" name="city" required value={formData.city} onChange={handleChange} className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 outline-none transition-all bg-slate-50 focus:bg-white font-medium text-slate-900" placeholder="e.g. Jaipur" />
                 </div>
               </div>
-
               <div className="flex gap-4 mt-10 pt-6 border-t border-slate-100">
-                <button 
-                  type="button" 
-                  onClick={onClose}
-                  disabled={isSubmitting}
-                  className="w-1/3 bg-white hover:bg-slate-100 text-slate-700 font-bold py-4 px-4 rounded-xl transition-all flex items-center justify-center border border-slate-200"
-                >
+                <button type="button" onClick={onClose} disabled={isSubmitting} className="w-1/3 bg-white hover:bg-slate-100 text-slate-700 font-bold py-4 px-4 rounded-xl transition-all flex items-center justify-center border border-slate-200">
                   Cancel
                 </button>
-                <button 
-                  type="submit" 
-                  disabled={isSubmitting}
-                  className={`w-2/3 bg-slate-900 hover:bg-blue-600 text-white font-bold py-4 px-4 rounded-xl transition-all flex items-center justify-center shadow-xl shadow-slate-900/20 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
-                >
+                <button type="submit" disabled={isSubmitting} className={`w-2/3 bg-slate-900 hover:bg-blue-600 text-white font-bold py-4 px-4 rounded-xl transition-all flex items-center justify-center shadow-xl shadow-slate-900/20 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}>
                   {isSubmitting ? 'Submitting...' : 'Submit Application'}
                   {!isSubmitting && <ArrowRight className="ml-2 h-5 w-5" />}
                 </button>
@@ -460,15 +407,9 @@ function AdmissionFormModal({ user, initialCourse, onClose }) {
   );
 }
 
-// ==========================================
-// PAGE COMPONENTS
-// ==========================================
-
 function Home({ navigate, openEnrollModal }) {
   return (
     <div className="animate-fade-in bg-white">
-      
-      {/* PREMIUM HERO SECTION */}
       <section className="relative bg-slate-50 overflow-hidden min-h-[90vh] flex items-center border-b border-slate-200">
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9InJnYmEoMTQ4LDE2MywxODQsMC4wNSkiLz48L3N2Zz4=')] [mask-image:linear-gradient(to_bottom,white,transparent)]"></div>
@@ -478,21 +419,17 @@ function Home({ navigate, openEnrollModal }) {
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-20 w-full">
           <div className="flex flex-col items-center text-center max-w-5xl mx-auto">
-            
             <div className="inline-flex items-center rounded-full px-6 py-2 text-sm font-extrabold text-blue-700 bg-blue-100 mb-10 border border-blue-200 shadow-sm animate-fade-in">
               <span className="flex h-2.5 w-2.5 rounded-full bg-blue-600 mr-3 animate-pulse"></span>
               Admissions Open 2027 Batches
             </div>
-
             <h1 className="text-6xl sm:text-7xl lg:text-[5.5rem] font-extrabold tracking-tight mb-8 leading-[1.1] text-slate-900">
               India's Premier <br className="hidden sm:block"/>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-indigo-600">Coaching Institute.</span>
             </h1>
-            
             <p className="text-xl md:text-2xl text-slate-600 mb-8 max-w-3xl leading-relaxed font-medium">
               Transforming potential into excellence. Join Naitra Edu Hub to conquer the nation's toughest competitive exams.
             </p>
-
             <div className="flex flex-wrap justify-center gap-3 mb-14 text-sm font-bold text-slate-700">
               {['NDA', 'CDS', 'CAPF AC', 'SSC CGL', 'SSC CPO', 'UPSC CSE', 'NEET', 'JEE'].map((course, idx) => (
                 <span key={idx} className="bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200 flex items-center">
@@ -500,21 +437,13 @@ function Home({ navigate, openEnrollModal }) {
                 </span>
               ))}
             </div>
-
             <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6 justify-center w-full sm:w-auto">
-              <button 
-                onClick={() => openEnrollModal()}
-                className="bg-slate-900 hover:bg-blue-600 text-white px-10 py-4.5 rounded-2xl font-bold text-xl transition-all shadow-xl hover:shadow-blue-600/30 flex items-center justify-center group w-full sm:w-auto"
-              >
+              <button onClick={() => openEnrollModal()} className="bg-slate-900 hover:bg-blue-600 text-white px-10 py-4.5 rounded-2xl font-bold text-xl transition-all shadow-xl hover:shadow-blue-600/30 flex items-center justify-center group w-full sm:w-auto">
                 Enroll Now
                 <ArrowRight className="ml-3 h-6 w-6 group-hover:translate-x-1.5 transition-transform" />
               </button>
-              <a 
-                href={`tel:${CONTACT_PHONE}`}
-                className="bg-white hover:bg-slate-50 text-slate-900 border-2 border-slate-200 px-10 py-4.5 rounded-2xl font-bold text-xl transition-all flex items-center justify-center w-full sm:w-auto hover:border-slate-300"
-              >
-                <Phone className="mr-3 h-6 w-6 text-blue-600" />
-                Call Now
+              <a href={`tel:${CONTACT_PHONE}`} className="bg-white hover:bg-slate-50 text-slate-900 border-2 border-slate-200 px-10 py-4.5 rounded-2xl font-bold text-xl transition-all flex items-center justify-center w-full sm:w-auto hover:border-slate-300">
+                <Phone className="mr-3 h-6 w-6 text-blue-600" /> Call Now
               </a>
             </div>
           </div>
@@ -542,23 +471,10 @@ function Home({ navigate, openEnrollModal }) {
               We don't just provide study material; we provide an ecosystem of success. From top-tier faculty to unparalleled disciplinary focus.
             </p>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            <PremiumFeatureCard 
-              icon={<Award className="h-8 w-8 text-white" />}
-              title="Elite Faculty Roster"
-              desc="Learn directly from retired bureaucrats, ex-defence officers, and industry-leading subject matter experts with decades of proven selection history."
-            />
-            <PremiumFeatureCard 
-              icon={<Target className="h-8 w-8 text-white" />}
-              title="Result-Oriented Approach"
-              desc="Our curriculum is strictly mapped to the latest examination patterns, eliminating unnecessary fluff and focusing entirely on rank-producing strategies."
-            />
-            <PremiumFeatureCard 
-              icon={<Shield className="h-8 w-8 text-white" />}
-              title="Disciplined Environment"
-              desc="We maintain a highly focused, competitive, and disciplined campus environment that keeps students motivated 100% on their ultimate goal."
-            />
+            <PremiumFeatureCard icon={<Award className="h-8 w-8 text-white" />} title="Elite Faculty Roster" desc="Learn directly from retired bureaucrats, ex-defence officers, and industry-leading subject matter experts with decades of proven selection history." />
+            <PremiumFeatureCard icon={<Target className="h-8 w-8 text-white" />} title="Result-Oriented Approach" desc="Our curriculum is strictly mapped to the latest examination patterns, eliminating unnecessary fluff and focusing entirely on rank-producing strategies." />
+            <PremiumFeatureCard icon={<Shield className="h-8 w-8 text-white" />} title="Disciplined Environment" desc="We maintain a highly focused, competitive, and disciplined campus environment that keeps students motivated 100% on their ultimate goal." />
           </div>
         </div>
       </section>
@@ -568,7 +484,6 @@ function Home({ navigate, openEnrollModal }) {
           <div className="absolute top-1/4 right-0 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px]"></div>
           <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-indigo-600/10 rounded-full blur-[100px]"></div>
         </div>
-
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
@@ -578,7 +493,6 @@ function Home({ navigate, openEnrollModal }) {
               <p className="text-xl text-slate-300 mb-10 leading-relaxed">
                 Education is incomplete without continuous evaluation. Our state-of-the-art monitoring framework ensures complete transparency and constant improvement.
               </p>
-              
               <ul className="space-y-6">
                 <SystemListItem icon={<ClipboardCheck />} title="Daily Study Tracking" desc="Every assignment and class activity is meticulously logged." />
                 <SystemListItem icon={<FileText />} title="Weekly Tests & Analytics" desc="Rigorous mock tests with deep percentile and weak-area analytics." />
@@ -586,7 +500,6 @@ function Home({ navigate, openEnrollModal }) {
                 <SystemListItem icon={<LineChart />} title="Progress Reports" desc="Transparent digital reporting system accessible by parents." />
               </ul>
             </div>
-            
             <div className="relative">
                <div className="bg-slate-900 border border-slate-700/50 p-8 rounded-[2.5rem] shadow-2xl relative z-10 transform lg:rotate-2 hover:rotate-0 transition-transform duration-500">
                  <div className="flex items-center justify-between mb-8 border-b border-slate-800 pb-6">
@@ -600,7 +513,6 @@ function Home({ navigate, openEnrollModal }) {
                      </div>
                    </div>
                  </div>
-                 
                  <div className="space-y-6">
                    <div>
                      <div className="flex justify-between text-sm mb-2 font-bold">
@@ -613,7 +525,6 @@ function Home({ navigate, openEnrollModal }) {
                        </div>
                      </div>
                    </div>
-                   
                    <div>
                      <div className="flex justify-between text-sm mb-2 font-bold">
                        <span className="text-slate-300">Syllabus Completion</span>
@@ -625,7 +536,6 @@ function Home({ navigate, openEnrollModal }) {
                        </div>
                      </div>
                    </div>
-
                    <div className="pt-6 grid grid-cols-2 gap-4">
                      <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50 text-center">
                         <h5 className="text-3xl font-bold text-white mb-1">A+</h5>
@@ -651,24 +561,13 @@ function Home({ navigate, openEnrollModal }) {
               <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">Premium Courses</h2>
               <div className="w-24 h-1.5 bg-blue-600 rounded-full"></div>
             </div>
-            <button 
-              onClick={() => navigate('courses')}
-              className="mt-8 md:mt-0 text-slate-900 hover:text-white bg-white hover:bg-slate-900 font-bold px-8 py-4 rounded-xl transition-all border border-slate-200 hover:border-slate-900 flex items-center shadow-sm"
-            >
+            <button onClick={() => navigate('courses')} className="mt-8 md:mt-0 text-slate-900 hover:text-white bg-white hover:bg-slate-900 font-bold px-8 py-4 rounded-xl transition-all border border-slate-200 hover:border-slate-900 flex items-center shadow-sm">
               Explore All Courses <ChevronRight className="h-5 w-5 ml-2" />
             </button>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
             {COURSES_LIST.slice(0, 6).map((course, idx) => (
-              <CourseGridCard 
-                key={idx}
-                title={course.title}
-                badge={course.badge}
-                description={course.description}
-                duration={course.duration}
-                onApply={() => openEnrollModal(course.title)}
-              />
+              <CourseGridCard key={idx} title={course.title} badge={course.badge} description={course.description} duration={course.duration} onApply={() => openEnrollModal(course.title)} />
             ))}
           </div>
         </div>
@@ -680,10 +579,7 @@ function Home({ navigate, openEnrollModal }) {
             <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-4 tracking-tight">Ready to transform your future?</h2>
             <p className="text-blue-100 text-xl font-medium max-w-2xl">Admissions are open for the upcoming target batches. Secure your seat today.</p>
           </div>
-          <button 
-            onClick={() => openEnrollModal()}
-            className="bg-white text-slate-900 hover:bg-slate-50 px-10 py-5 rounded-2xl font-bold text-xl transition-all shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex items-center shrink-0 border border-white"
-          >
+          <button onClick={() => openEnrollModal()} className="bg-white text-slate-900 hover:bg-slate-50 px-10 py-5 rounded-2xl font-bold text-xl transition-all shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex items-center shrink-0 border border-white">
             Apply for Admission <ArrowRight className="ml-3 h-6 w-6 text-blue-600" />
           </button>
         </div>
@@ -700,7 +596,6 @@ function About({ openEnrollModal }) {
           <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6">About Naitra Edu Hub</h1>
           <div className="w-24 h-1.5 bg-blue-600 mx-auto rounded-full"></div>
         </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
             <h2 className="text-3xl font-bold text-slate-900 mb-6">Pioneering Excellence in Education</h2>
@@ -758,29 +653,15 @@ function Courses({ openEnrollModal }) {
           <p className="mt-8 text-xl text-slate-600 max-w-2xl mx-auto font-medium">
             Choose from our specialized 2027 targeted programs designed to crack India's elite competitive examinations.
           </p>
-          
-          <button 
-            onClick={() => setIsCounselorOpen(true)}
-            className="mt-8 inline-flex items-center bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white border border-indigo-200 hover:border-indigo-600 px-6 py-3 rounded-full font-bold transition-all shadow-sm hover:shadow-lg"
-          >
+          <button onClick={() => setIsCounselorOpen(true)} className="mt-8 inline-flex items-center bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white border border-indigo-200 hover:border-indigo-600 px-6 py-3 rounded-full font-bold transition-all shadow-sm hover:shadow-lg">
             <BrainCircuit className="w-5 h-5 mr-2" /> Confused? Ask AI Career Counselor ✨
           </button>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
           {COURSES_LIST.map((course, idx) => (
-            <CourseGridCard 
-              key={idx}
-              title={course.title}
-              badge={course.badge}
-              description={course.description}
-              duration={course.duration}
-              onApply={() => openEnrollModal(course.title)}
-            />
+            <CourseGridCard key={idx} title={course.title} badge={course.badge} description={course.description} duration={course.duration} onApply={() => openEnrollModal(course.title)} />
           ))}
         </div>
-
-        {/* AI Counselor Modal */}
         {isCounselorOpen && (
           <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
             <div className="bg-white rounded-[2rem] w-full max-w-xl shadow-2xl overflow-hidden animate-fade-in relative mt-10 mb-10 border border-slate-200">
@@ -794,22 +675,16 @@ function Courses({ openEnrollModal }) {
                 <h2 className="text-2xl font-extrabold mb-1">AI Career Counselor ✨</h2>
                 <p className="text-indigo-100 font-medium text-sm">Tell us your background, and we'll recommend the perfect course.</p>
               </div>
-              
               <div className="p-8">
                 <form onSubmit={handleGetAdvice} className="space-y-4">
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">Your Education & Interests</label>
-                    <textarea 
-                      rows="3" required value={studentBg} onChange={(e) => setStudentBg(e.target.value)}
-                      placeholder="E.g., I just passed 12th PCM with 85% and I want to join the army as an officer..."
-                      className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-600 outline-none resize-none font-medium text-slate-900 bg-slate-50 focus:bg-white transition-colors"
-                    />
+                    <textarea rows="3" required value={studentBg} onChange={(e) => setStudentBg(e.target.value)} placeholder="E.g., I just passed 12th PCM with 85% and I want to join the army as an officer..." className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-600 outline-none resize-none font-medium text-slate-900 bg-slate-50 focus:bg-white transition-colors" />
                   </div>
                   <button type="submit" disabled={isCounseling || !studentBg.trim()} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg flex justify-center items-center disabled:opacity-50">
                     {isCounseling ? 'Analyzing...' : 'Get Course Recommendation ✨'}
                   </button>
                 </form>
-
                 {aiRecommendation && (
                   <div className="mt-8 bg-indigo-50 border border-indigo-100 rounded-2xl p-6 relative animate-fade-in">
                     <Sparkles className="absolute top-4 right-4 text-indigo-400 opacity-20 w-12 h-12"/>
@@ -839,14 +714,12 @@ function Contact({ openEnrollModal }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-5xl mx-auto">
-          {/* Contact Info */}
           <div className="bg-slate-900 text-white p-12 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
              <div className="absolute top-0 right-0 opacity-5 pointer-events-none p-4">
                 <MapPin className="w-64 h-64" />
              </div>
              <div className="relative z-10">
                 <h3 className="text-3xl font-bold mb-10 text-white">Institute Details</h3>
-                
                 <div className="space-y-10">
                   <div className="flex items-start space-x-6">
                     <div className="bg-blue-600/20 p-4 rounded-2xl flex-shrink-0 border border-blue-500/30">
@@ -857,7 +730,6 @@ function Contact({ openEnrollModal }) {
                       <p className="text-slate-300 font-medium font-mono text-lg">+91 {CONTACT_PHONE}</p>
                     </div>
                   </div>
-
                   <div className="flex items-start space-x-6">
                     <div className="bg-blue-600/20 p-4 rounded-2xl flex-shrink-0 border border-blue-500/30">
                       <Mail className="h-7 w-7 text-blue-400" />
@@ -870,8 +742,6 @@ function Contact({ openEnrollModal }) {
                 </div>
              </div>
           </div>
-
-          {/* Direct CTA */}
           <div className="bg-slate-50 p-12 rounded-[2.5rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
             <div className="bg-white p-5 rounded-3xl shadow-sm mb-8 border border-slate-100">
               <GraduationCap className="h-14 w-14 text-blue-600" />
@@ -880,10 +750,7 @@ function Contact({ openEnrollModal }) {
             <p className="text-slate-600 mb-10 text-lg font-medium px-4">
               Don't wait. Fill out our online admission form and our team will contact you with all the details regarding batches and fees.
             </p>
-            <button 
-              onClick={() => openEnrollModal()}
-              className="w-full bg-slate-900 hover:bg-blue-600 text-white font-bold py-5 px-8 rounded-2xl transition-all shadow-xl shadow-slate-900/20 flex justify-center items-center text-xl"
-            >
+            <button onClick={() => openEnrollModal()} className="w-full bg-slate-900 hover:bg-blue-600 text-white font-bold py-5 px-8 rounded-2xl transition-all shadow-xl shadow-slate-900/20 flex justify-center items-center text-xl">
               Fill Admission Form <ArrowRight className="ml-3 h-6 w-6" />
             </button>
           </div>
@@ -893,41 +760,32 @@ function Contact({ openEnrollModal }) {
   );
 }
 
-function StudentPortal({ user, studentProfile, setStudentProfile, onStartTest }) {
+function StudentPortal({ studentProfile, setStudentProfile, onStartTest }) {
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
-  
   const [tests, setTests] = useState([]);
   const [attempts, setAttempts] = useState([]);
   const [activeTab, setActiveTab] = useState('tests');
-
-  // Gemini AI State
   const [aiQuery, setAiQuery] = useState('');
   const [aiResponse, setAiResponse] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
 
   useEffect(() => {
-    if (!user || !studentProfile) return;
-
-    const qTests = collection(db, 'artifacts', appId, 'public', 'data', 'tests');
+    if (!studentProfile) return;
+    const qTests = collection(db, 'tests');
     const unsubTests = onSnapshot(qTests, (snap) => {
       const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(t => t.published);
       setTests(data);
     });
-
-    const qAttempts = collection(db, 'artifacts', appId, 'public', 'data', 'testAttempts');
+    const qAttempts = collection(db, 'testAttempts');
     const unsubAttempts = onSnapshot(qAttempts, (snap) => {
       const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(a => a.studentPhone === studentProfile.phone)
         .sort((a, b) => b.createdAt - a.createdAt);
       setAttempts(data);
     });
-
-    return () => {
-      unsubTests();
-      unsubAttempts();
-    };
-  }, [user, studentProfile]);
+    return () => { unsubTests(); unsubAttempts(); };
+  }, [studentProfile]);
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -950,19 +808,11 @@ function StudentPortal({ user, studentProfile, setStudentProfile, onStartTest })
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-1.5">Full Name</label>
-              <input 
-                type="text" required value={name} onChange={e => setName(e.target.value)}
-                placeholder="Enter your name"
-                className="w-full px-6 py-4 rounded-2xl border border-slate-300 focus:ring-2 focus:ring-blue-600 outline-none font-medium bg-slate-50 focus:bg-white transition-colors"
-              />
+              <input type="text" required value={name} onChange={e => setName(e.target.value)} placeholder="Enter your name" className="w-full px-6 py-4 rounded-2xl border border-slate-300 focus:ring-2 focus:ring-blue-600 outline-none font-medium bg-slate-50 focus:bg-white transition-colors" />
             </div>
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-1.5">Mobile Number</label>
-              <input 
-                type="tel" required pattern="[0-9]{10}" value={phone} onChange={e => setPhone(e.target.value)}
-                placeholder="10 digit mobile number"
-                className="w-full px-6 py-4 rounded-2xl border border-slate-300 focus:ring-2 focus:ring-blue-600 outline-none font-medium bg-slate-50 focus:bg-white transition-colors"
-              />
+              <input type="tel" required pattern="[0-9]{10}" value={phone} onChange={e => setPhone(e.target.value)} placeholder="10 digit mobile number" className="w-full px-6 py-4 rounded-2xl border border-slate-300 focus:ring-2 focus:ring-blue-600 outline-none font-medium bg-slate-50 focus:bg-white transition-colors" />
             </div>
             <button type="submit" className="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/30 text-lg">
               Proceed to Dashboard
@@ -976,39 +826,19 @@ function StudentPortal({ user, studentProfile, setStudentProfile, onStartTest })
   return (
     <div className="min-h-screen bg-slate-50 py-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Dashboard Header */}
         <div className="bg-slate-900 rounded-[2rem] p-8 md:p-10 text-white flex flex-col md:flex-row justify-between items-center mb-10 shadow-xl overflow-hidden relative">
-          <div className="absolute top-0 right-0 opacity-10">
-             <Target className="w-64 h-64 -mt-10 -mr-10" />
-          </div>
+          <div className="absolute top-0 right-0 opacity-10"><Target className="w-64 h-64 -mt-10 -mr-10" /></div>
           <div className="relative z-10 text-center md:text-left mb-6 md:mb-0">
             <h1 className="text-3xl md:text-4xl font-extrabold mb-2">Welcome, {studentProfile.name}</h1>
             <p className="text-blue-200">Prepare smartly with our advanced mock tests.</p>
           </div>
           <div className="relative z-10 flex gap-4 bg-slate-800/50 p-2 rounded-2xl backdrop-blur-md overflow-x-auto">
-            <button 
-              onClick={() => setActiveTab('tests')}
-              className={`px-6 py-3 rounded-xl font-bold transition-colors whitespace-nowrap ${activeTab === 'tests' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}
-            >
-              Available Tests
-            </button>
-            <button 
-              onClick={() => setActiveTab('history')}
-              className={`px-6 py-3 rounded-xl font-bold transition-colors whitespace-nowrap ${activeTab === 'history' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}
-            >
-              My Results
-            </button>
-            <button 
-              onClick={() => setActiveTab('assistant')}
-              className={`px-6 py-3 rounded-xl font-bold transition-colors flex items-center whitespace-nowrap ${activeTab === 'assistant' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}
-            >
-              <Sparkles className="w-4 h-4 mr-2"/> AI Assistant
-            </button>
+            <button onClick={() => setActiveTab('tests')} className={`px-6 py-3 rounded-xl font-bold transition-colors whitespace-nowrap ${activeTab === 'tests' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}>Available Tests</button>
+            <button onClick={() => setActiveTab('history')} className={`px-6 py-3 rounded-xl font-bold transition-colors whitespace-nowrap ${activeTab === 'history' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}>My Results</button>
+            <button onClick={() => setActiveTab('assistant')} className={`px-6 py-3 rounded-xl font-bold transition-colors flex items-center whitespace-nowrap ${activeTab === 'assistant' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}><Sparkles className="w-4 h-4 mr-2"/> AI Assistant</button>
           </div>
         </div>
 
-        {/* Content Area */}
         {activeTab === 'tests' ? (
           <div>
             <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center"><ClipboardCheck className="mr-3 text-blue-600"/> Upcoming & Active Tests</h2>
@@ -1032,10 +862,7 @@ function StudentPortal({ user, studentProfile, setStudentProfile, onStartTest })
                       <p>• +{test.positiveMarks} marks for correct answer</p>
                       <p>• -{test.negativeMarks} marks for incorrect answer</p>
                     </div>
-                    <button 
-                      onClick={() => onStartTest(test)}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-md flex justify-center items-center group"
-                    >
+                    <button onClick={() => onStartTest(test)} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-md flex justify-center items-center group">
                       <PlayCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform"/> Start Test
                     </button>
                   </div>
@@ -1063,7 +890,6 @@ function StudentPortal({ user, studentProfile, setStudentProfile, onStartTest })
                       </div>
                       <h3 className="text-lg font-bold text-slate-900">{attempt.testTitle}</h3>
                     </div>
-                    
                     <div className="flex gap-8 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-4 md:pt-0">
                       <div className="text-center">
                         <p className="text-xs text-slate-500 font-bold uppercase tracking-wide mb-1">Score</p>
@@ -1071,9 +897,7 @@ function StudentPortal({ user, studentProfile, setStudentProfile, onStartTest })
                       </div>
                       <div className="text-center">
                         <p className="text-xs text-slate-500 font-bold uppercase tracking-wide mb-1">Accuracy</p>
-                        <p className="text-2xl font-extrabold text-emerald-500">
-                          {attempt.total > 0 ? Math.round((attempt.correct / (attempt.correct + attempt.incorrect)) * 100) || 0 : 0}%
-                        </p>
+                        <p className="text-2xl font-extrabold text-emerald-500">{attempt.total > 0 ? Math.round((attempt.correct / (attempt.correct + attempt.incorrect)) * 100) || 0 : 0}%</p>
                       </div>
                       <div className="text-center hidden sm:block">
                         <p className="text-xs text-slate-500 font-bold uppercase tracking-wide mb-1">Attempted</p>
@@ -1090,50 +914,23 @@ function StudentPortal({ user, studentProfile, setStudentProfile, onStartTest })
             <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center"><Bot className="mr-3 text-indigo-600"/> AI Study Assistant ✨</h2>
             <div className="bg-white rounded-3xl p-6 md:p-10 border border-slate-200 shadow-sm">
               <div className="bg-indigo-50 rounded-2xl p-6 mb-8 border border-indigo-100 flex items-start">
-                 <div className="bg-indigo-600 p-3 rounded-xl text-white mr-4 shrink-0">
-                    <BrainCircuit className="w-6 h-6"/>
-                 </div>
+                 <div className="bg-indigo-600 p-3 rounded-xl text-white mr-4 shrink-0"><BrainCircuit className="w-6 h-6"/></div>
                  <div>
                    <h3 className="text-lg font-bold text-slate-900 mb-1">How can I help you study today?</h3>
                    <p className="text-slate-600 text-sm">Ask me to explain complex topics, solve doubts, or create a personalized study schedule based on your weak areas.</p>
                  </div>
               </div>
-
-              <form 
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  if(!aiQuery.trim()) return;
-                  setIsAiLoading(true);
-                  setAiResponse('');
-                  const res = await callGeminiAPI(`As a tutor for Naitra Edu Hub, please answer this student query: ${aiQuery}`);
-                  setAiResponse(res);
-                  setIsAiLoading(false);
-                }} 
-                className="mb-8 relative"
-              >
-                <textarea 
-                  rows="3"
-                  value={aiQuery}
-                  onChange={(e) => setAiQuery(e.target.value)}
-                  placeholder="E.g., Explain the concept of Plate Tectonics in Geography for UPSC..."
-                  className="w-full px-5 py-4 rounded-2xl border border-slate-300 focus:ring-2 focus:ring-indigo-600 outline-none resize-none font-medium text-slate-900 bg-slate-50 focus:bg-white transition-colors md:pr-36"
-                />
-                <button 
-                  type="submit" 
-                  disabled={isAiLoading || !aiQuery.trim()}
-                  className="md:absolute bottom-4 right-4 mt-4 md:mt-0 w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center"
-                >
+              <form onSubmit={async (e) => { e.preventDefault(); if(!aiQuery.trim()) return; setIsAiLoading(true); setAiResponse(''); const res = await callGeminiAPI(`As a tutor for Naitra Edu Hub, please answer this student query: ${aiQuery}`); setAiResponse(res); setIsAiLoading(false); }} className="mb-8 relative">
+                <textarea rows="3" value={aiQuery} onChange={(e) => setAiQuery(e.target.value)} placeholder="E.g., Explain the concept of Plate Tectonics in Geography for UPSC..." className="w-full px-5 py-4 rounded-2xl border border-slate-300 focus:ring-2 focus:ring-indigo-600 outline-none resize-none font-medium text-slate-900 bg-slate-50 focus:bg-white transition-colors md:pr-36" />
+                <button type="submit" disabled={isAiLoading || !aiQuery.trim()} className="md:absolute bottom-4 right-4 mt-4 md:mt-0 w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center">
                   {isAiLoading ? 'Thinking...' : 'Ask AI ✨'}
                 </button>
               </form>
-
               {aiResponse && (
                 <div className="bg-slate-900 text-slate-300 p-6 md:p-8 rounded-2xl shadow-inner border border-slate-800 animate-fade-in relative">
                   <Sparkles className="absolute top-4 right-4 text-indigo-400 opacity-20 w-16 h-16"/>
                   <h4 className="text-white font-bold mb-4 flex items-center"><Bot className="w-5 h-5 mr-2 text-indigo-400"/> AI Response</h4>
-                  <div className="prose prose-invert prose-indigo max-w-none text-sm leading-relaxed whitespace-pre-wrap">
-                    {aiResponse}
-                  </div>
+                  <div className="prose prose-invert prose-indigo max-w-none text-sm leading-relaxed whitespace-pre-wrap">{aiResponse}</div>
                 </div>
               )}
             </div>
@@ -1144,7 +941,7 @@ function StudentPortal({ user, studentProfile, setStudentProfile, onStartTest })
   );
 }
 
-function TestEngine({ test, studentProfile, onExit, user }) {
+function TestEngine({ test, studentProfile, onExit }) {
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [answers, setAnswers] = useState({}); 
   const [timeLeft, setTimeLeft] = useState(test.duration * 60);
@@ -1159,60 +956,35 @@ function TestEngine({ test, studentProfile, onExit, user }) {
       handleSubmitTest();
       return;
     }
-    const timer = setInterval(() => {
-      setTimeLeft(prev => prev - 1);
-    }, 1000);
+    const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
     return () => clearInterval(timer);
   }, [timeLeft, result, isSubmitting]);
 
-  const handleSelectOption = (optIndex) => {
-    setAnswers(prev => ({ ...prev, [currentQIndex]: optIndex }));
-  };
+  const handleSelectOption = (optIndex) => setAnswers(prev => ({ ...prev, [currentQIndex]: optIndex }));
 
   const calculateResult = () => {
-    let correct = 0;
-    let incorrect = 0;
-    
+    let correct = 0, incorrect = 0;
     questions.forEach((q, idx) => {
       const selected = answers[idx];
       if (selected !== undefined) {
-        if (selected === parseInt(q.correctOption)) {
-          correct++;
-        } else {
-          incorrect++;
-        }
+        if (selected === parseInt(q.correctOption)) correct++;
+        else incorrect++;
       }
     });
-
     const unattempted = questions.length - (correct + incorrect);
     const score = (correct * parseFloat(test.positiveMarks)) - (incorrect * parseFloat(test.negativeMarks));
-
-    return {
-      testId: test.id,
-      testTitle: test.title,
-      course: test.course,
-      studentName: studentProfile.name,
-      studentPhone: studentProfile.phone,
-      total: questions.length,
-      correct,
-      incorrect,
-      unattempted,
-      score,
-      createdAt: Date.now()
-    };
+    return { testId: test.id, testTitle: test.title, course: test.course, studentName: studentProfile.name, studentPhone: studentProfile.phone, total: questions.length, correct, incorrect, unattempted, score, createdAt: Date.now() };
   };
 
   const handleSubmitTest = async () => {
-    if (!user) return; 
     setIsSubmitting(true);
     const finalResult = calculateResult();
-    
     try {
-      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'testAttempts'), finalResult);
+      await addDoc(collection(db, 'testAttempts'), finalResult);
       setResult(finalResult);
     } catch (error) {
       console.error("Error saving attempt:", error);
-      alert("Failed to save result. Please check connection.");
+      alert("Failed to save result.");
     }
     setIsSubmitting(false);
   };
@@ -1234,10 +1006,8 @@ function TestEngine({ test, studentProfile, onExit, user }) {
             <h2 className="text-3xl font-extrabold mb-2">Test Submitted Successfully!</h2>
             <p className="text-slate-400">{test.title} • {studentProfile.name}</p>
           </div>
-          
           <div className="p-10">
             <h3 className="text-xl font-bold text-slate-900 mb-6 text-center">Your Performance Scorecard</h3>
-            
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
               <div className="bg-blue-50 p-4 rounded-2xl text-center border border-blue-100">
                  <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Total Score</p>
@@ -1256,18 +1026,10 @@ function TestEngine({ test, studentProfile, onExit, user }) {
               </div>
               <div className="bg-slate-50 p-4 rounded-2xl text-center border border-slate-200">
                  <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Accuracy</p>
-                 <p className="text-3xl font-extrabold text-slate-700">
-                   {result.correct + result.incorrect > 0 ? Math.round((result.correct / (result.correct + result.incorrect)) * 100) : 0}%
-                 </p>
+                 <p className="text-3xl font-extrabold text-slate-700">{result.correct + result.incorrect > 0 ? Math.round((result.correct / (result.correct + result.incorrect)) * 100) : 0}%</p>
               </div>
             </div>
-
-            <button 
-              onClick={onExit}
-              className="w-full bg-slate-900 hover:bg-blue-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg"
-            >
-              Return to Dashboard
-            </button>
+            <button onClick={onExit} className="w-full bg-slate-900 hover:bg-blue-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg">Return to Dashboard</button>
           </div>
         </div>
       </div>
@@ -1287,20 +1049,13 @@ function TestEngine({ test, studentProfile, onExit, user }) {
           <div className={`flex items-center font-mono font-bold text-xl px-4 py-2 rounded-lg ${timeLeft < 300 ? 'bg-rose-100 text-rose-600 animate-pulse' : 'bg-slate-100 text-slate-700'}`}>
             <Clock className="w-5 h-5 mr-2" /> {formatTime(timeLeft)}
           </div>
-          <button 
-            onClick={() => {
-               if(window.confirm("Are you sure you want to submit the test early?")) handleSubmitTest();
-            }}
-            disabled={isSubmitting}
-            className="hidden md:flex bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-bold transition-colors"
-          >
+          <button onClick={() => { if(window.confirm("Are you sure you want to submit the test early?")) handleSubmitTest(); }} disabled={isSubmitting} className="hidden md:flex bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-bold transition-colors">
             {isSubmitting ? 'Submitting...' : 'Submit Exam'}
           </button>
         </div>
       </header>
 
       <div className="flex-1 flex flex-col lg:flex-row max-w-[1400px] mx-auto w-full p-4 lg:p-6 gap-6">
-        
         <div className="flex-1 bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden flex flex-col">
           <div className="p-6 md:p-10 flex-1">
             <div className="flex justify-between items-center mb-8 border-b border-slate-100 pb-4">
@@ -1310,30 +1065,17 @@ function TestEngine({ test, studentProfile, onExit, user }) {
                 <span className="bg-rose-50 text-rose-700 px-3 py-1 rounded-lg">-{test.negativeMarks}</span>
               </div>
             </div>
-            
-            <p className="text-lg md:text-xl text-slate-800 font-medium mb-10 leading-relaxed">
-              {currentQuestion?.questionText || "No question text provided."}
-            </p>
-
+            <p className="text-lg md:text-xl text-slate-800 font-medium mb-10 leading-relaxed">{currentQuestion?.questionText || "No question text provided."}</p>
             <div className="space-y-4">
               {currentQuestion?.options?.map((opt, idx) => {
                 const isSelected = answers[currentQIndex] === idx;
                 return (
-                  <label 
-                    key={idx} 
-                    className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${isSelected ? 'border-blue-600 bg-blue-50' : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50'}`}
-                  >
+                  <label key={idx} className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${isSelected ? 'border-blue-600 bg-blue-50' : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50'}`}>
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 ${isSelected ? 'border-blue-600' : 'border-slate-300'}`}>
                       {isSelected && <div className="w-3 h-3 bg-blue-600 rounded-full" />}
                     </div>
                     <span className={`text-base font-medium ${isSelected ? 'text-blue-900' : 'text-slate-700'}`}>{opt}</span>
-                    <input 
-                      type="radio" 
-                      name={`q-${currentQIndex}`} 
-                      className="hidden" 
-                      checked={isSelected}
-                      onChange={() => handleSelectOption(idx)}
-                    />
+                    <input type="radio" name={`q-${currentQIndex}`} className="hidden" checked={isSelected} onChange={() => handleSelectOption(idx)} />
                   </label>
                 );
               })}
@@ -1341,31 +1083,10 @@ function TestEngine({ test, studentProfile, onExit, user }) {
           </div>
           
           <div className="bg-slate-50 p-4 md:p-6 border-t border-slate-200 flex justify-between items-center">
-            <button 
-              onClick={() => setCurrentQIndex(prev => Math.max(0, prev - 1))}
-              disabled={currentQIndex === 0}
-              className="px-6 py-3 rounded-xl font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 disabled:opacity-50 transition-colors"
-            >
-              Previous
-            </button>
+            <button onClick={() => setCurrentQIndex(prev => Math.max(0, prev - 1))} disabled={currentQIndex === 0} className="px-6 py-3 rounded-xl font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 disabled:opacity-50 transition-colors">Previous</button>
             <div className="flex gap-3">
-              <button 
-                onClick={() => {
-                  const newAnswers = {...answers};
-                  delete newAnswers[currentQIndex];
-                  setAnswers(newAnswers);
-                }}
-                className="px-6 py-3 rounded-xl font-bold bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 transition-colors hidden sm:block"
-              >
-                Clear Answer
-              </button>
-              <button 
-                onClick={() => setCurrentQIndex(prev => Math.min(questions.length - 1, prev + 1))}
-                disabled={currentQIndex === questions.length - 1}
-                className="px-8 py-3 rounded-xl font-bold bg-slate-900 text-white hover:bg-blue-600 disabled:opacity-50 transition-colors shadow-md"
-              >
-                Next
-              </button>
+              <button onClick={() => { const newAnswers = {...answers}; delete newAnswers[currentQIndex]; setAnswers(newAnswers); }} className="px-6 py-3 rounded-xl font-bold bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 transition-colors hidden sm:block">Clear Answer</button>
+              <button onClick={() => setCurrentQIndex(prev => Math.min(questions.length - 1, prev + 1))} disabled={currentQIndex === questions.length - 1} className="px-8 py-3 rounded-xl font-bold bg-slate-900 text-white hover:bg-blue-600 disabled:opacity-50 transition-colors shadow-md">Next</button>
             </div>
           </div>
         </div>
@@ -1377,39 +1098,19 @@ function TestEngine({ test, studentProfile, onExit, user }) {
               const isAnswered = answers[idx] !== undefined;
               const isActive = currentQIndex === idx;
               return (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentQIndex(idx)}
-                  className={`w-10 h-10 rounded-lg font-bold text-sm flex items-center justify-center transition-all ${
-                    isActive ? 'ring-2 ring-blue-600 ring-offset-2' : ''
-                  } ${
-                    isAnswered ? 'bg-emerald-500 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  {idx + 1}
-                </button>
+                <button key={idx} onClick={() => setCurrentQIndex(idx)} className={`w-10 h-10 rounded-lg font-bold text-sm flex items-center justify-center transition-all ${isActive ? 'ring-2 ring-blue-600 ring-offset-2' : ''} ${isAnswered ? 'bg-emerald-500 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{idx + 1}</button>
               )
             })}
           </div>
-          
           <div className="pt-6 border-t border-slate-100 space-y-3 mb-6 text-sm font-medium">
             <div className="flex items-center justify-between">
-              <div className="flex items-center"><div className="w-4 h-4 rounded bg-emerald-500 mr-2"></div> Attempted</div>
-              <span>{Object.keys(answers).length}</span>
+              <div className="flex items-center"><div className="w-4 h-4 rounded bg-emerald-500 mr-2"></div> Attempted</div><span>{Object.keys(answers).length}</span>
             </div>
             <div className="flex items-center justify-between">
-              <div className="flex items-center"><div className="w-4 h-4 rounded bg-slate-100 border border-slate-300 mr-2"></div> Unattempted</div>
-              <span>{questions.length - Object.keys(answers).length}</span>
+              <div className="flex items-center"><div className="w-4 h-4 rounded bg-slate-100 border border-slate-300 mr-2"></div> Unattempted</div><span>{questions.length - Object.keys(answers).length}</span>
             </div>
           </div>
-
-          <button 
-            onClick={() => {
-               if(window.confirm("Are you sure you want to submit the test? You cannot undo this.")) handleSubmitTest();
-            }}
-            disabled={isSubmitting}
-            className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg lg:hidden"
-          >
+          <button onClick={() => { if(window.confirm("Are you sure you want to submit the test? You cannot undo this.")) handleSubmitTest(); }} disabled={isSubmitting} className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg lg:hidden">
             {isSubmitting ? 'Submitting...' : 'Final Submit Exam'}
           </button>
         </div>
@@ -1418,10 +1119,7 @@ function TestEngine({ test, studentProfile, onExit, user }) {
   );
 }
 
-// ==========================================
-// ADMIN DASHBOARD
-// ==========================================
-function AdminDashboard({ user }) {
+function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pin, setPin] = useState('');
   const [adminTab, setAdminTab] = useState('enquiries');
@@ -1441,25 +1139,25 @@ function AdminDashboard({ user }) {
   };
 
   useEffect(() => {
-    if (!user || !isAuthenticated) return;
+    if (!isAuthenticated) return;
     
-    const unsubEnq = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'enquiries'), snap => {
+    const unsubEnq = onSnapshot(collection(db, 'enquiries'), snap => {
       const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.createdAt - a.createdAt);
       setEnquiries(data);
     });
 
-    const unsubTests = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'tests'), snap => {
+    const unsubTests = onSnapshot(collection(db, 'tests'), snap => {
       const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.createdAt - a.createdAt);
       setTests(data);
     });
 
-    const unsubResults = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'testAttempts'), snap => {
+    const unsubResults = onSnapshot(collection(db, 'testAttempts'), snap => {
       const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.createdAt - a.createdAt);
       setResults(data);
     });
 
     return () => { unsubEnq(); unsubTests(); unsubResults(); };
-  }, [user, isAuthenticated]);
+  }, [isAuthenticated]);
 
   if (!isAuthenticated) {
     return (
@@ -1474,10 +1172,7 @@ function AdminDashboard({ user }) {
           </div>
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
-              <input 
-                type="password" value={pin} onChange={(e) => setPin(e.target.value)} placeholder="Enter PIN"
-                className="w-full px-6 py-4 rounded-2xl border border-slate-300 focus:ring-2 focus:ring-slate-900 outline-none text-center text-xl tracking-widest font-mono bg-slate-50 focus:bg-white transition-colors"
-              />
+              <input type="password" value={pin} onChange={(e) => setPin(e.target.value)} placeholder="Enter PIN" className="w-full px-6 py-4 rounded-2xl border border-slate-300 focus:ring-2 focus:ring-slate-900 outline-none text-center text-xl tracking-widest font-mono bg-slate-50 focus:bg-white transition-colors" />
             </div>
             <button type="submit" className="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl hover:bg-blue-600 transition-colors shadow-lg shadow-slate-900/20 text-lg">
               Access Dashboard
@@ -1516,27 +1211,21 @@ function AdminDashboard({ user }) {
   };
 
   const deleteTest = async (id) => {
-    if(window.confirm("Delete this test?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tests', id));
+    if(window.confirm("Delete this test?")) await deleteDoc(doc(db, 'tests', id));
   };
   const togglePublish = async (test) => {
-    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tests', test.id), { published: !test.published });
+    await updateDoc(doc(db, 'tests', test.id), { published: !test.published });
   };
 
   if (isEditingTest) {
     return (
-      <AdminTestBuilder 
-        user={user} 
-        initialData={editTestObj} 
-        onCancel={() => setIsEditingTest(false)} 
-        onSave={() => setIsEditingTest(false)} 
-      />
+      <AdminTestBuilder initialData={editTestObj} onCancel={() => setIsEditingTest(false)} onSave={() => setIsEditingTest(false)} />
     );
   }
 
   return (
     <div className="min-h-screen bg-slate-50 py-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
           <div>
             <h1 className="text-4xl font-extrabold text-slate-900">Admin Control Center</h1>
@@ -1562,10 +1251,7 @@ function AdminDashboard({ user }) {
         <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
           <div className="relative w-full md:w-[400px]">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-            <input 
-              type="text" placeholder={`Search ${adminTab}...`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-200 shadow-sm focus:ring-2 focus:ring-blue-600 outline-none font-medium bg-white"
-            />
+            <input type="text" placeholder={`Search ${adminTab}...`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-200 shadow-sm focus:ring-2 focus:ring-blue-600 outline-none font-medium bg-white" />
           </div>
           {adminTab === 'tests' && (
             <button onClick={handleCreateNewTest} className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center">
@@ -1596,7 +1282,6 @@ function AdminDashboard({ user }) {
                   )}
                 </tr>
               </thead>
-              
               <tbody className="divide-y divide-slate-100">
                 {filteredData.length === 0 ? (
                   <tr><td colSpan="6" className="p-10 text-center text-slate-500 font-medium">No records found.</td></tr>
@@ -1615,14 +1300,11 @@ function AdminDashboard({ user }) {
                           <td className="p-5 font-medium text-slate-600">{item.city}</td>
                         </>
                       )}
-                      
                       {adminTab === 'tests' && (
                         <>
                           <td className="p-5 font-bold text-slate-900">{item.title}</td>
                           <td className="p-5"><span className="bg-slate-100 text-slate-700 px-3 py-1 rounded-lg text-xs font-bold border border-slate-200">{item.course}</span></td>
-                          <td className="p-5 text-sm text-slate-600 font-medium">
-                            {item.questions?.length || 0} Qs • {item.duration}m • (+{item.positiveMarks}/-{item.negativeMarks})
-                          </td>
+                          <td className="p-5 text-sm text-slate-600 font-medium">{item.questions?.length || 0} Qs • {item.duration}m • (+{item.positiveMarks}/-{item.negativeMarks})</td>
                           <td className="p-5 text-center">
                             <button onClick={() => togglePublish(item)} className={`px-3 py-1 rounded-lg text-xs font-bold border ${item.published ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
                               {item.published ? 'Published' : 'Draft'}
@@ -1634,7 +1316,6 @@ function AdminDashboard({ user }) {
                           </td>
                         </>
                       )}
-
                       {adminTab === 'results' && (
                         <>
                           <td className="p-5 text-sm text-slate-600 font-medium">{new Date(item.createdAt).toLocaleString()}</td>
@@ -1663,7 +1344,7 @@ function AdminDashboard({ user }) {
   );
 }
 
-function AdminTestBuilder({ user, initialData, onCancel, onSave }) {
+function AdminTestBuilder({ initialData, onCancel, onSave }) {
   const [test, setTest] = useState(initialData);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -1696,7 +1377,6 @@ function AdminTestBuilder({ user, initialData, onCancel, onSave }) {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!user) return;
     setIsSaving(true);
     try {
       const payload = {
@@ -1708,10 +1388,10 @@ function AdminTestBuilder({ user, initialData, onCancel, onSave }) {
       };
 
       if (test.id) {
-        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tests', test.id), payload);
+        await updateDoc(doc(db, 'tests', test.id), payload);
       } else {
         payload.createdAt = Date.now();
-        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'tests'), payload);
+        await addDoc(collection(db, 'tests'), payload);
       }
       onSave();
     } catch (error) {
@@ -1724,7 +1404,6 @@ function AdminTestBuilder({ user, initialData, onCancel, onSave }) {
   return (
     <div className="min-h-screen bg-slate-50 py-10">
       <div className="max-w-5xl mx-auto px-4">
-        
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-extrabold text-slate-900">{test.id ? 'Edit Test' : 'Create New Test'}</h1>
           <button onClick={onCancel} className="bg-white border border-slate-300 px-4 py-2 rounded-xl font-bold hover:bg-slate-100 transition-colors">Cancel</button>
@@ -1782,25 +1461,15 @@ function AdminTestBuilder({ user, initialData, onCancel, onSave }) {
                 <button type="button" onClick={() => removeQuestion(qIndex)} className="absolute top-6 right-6 text-slate-400 hover:text-rose-600 transition-colors p-1 bg-slate-50 hover:bg-rose-50 rounded-md">
                    <Trash2 className="w-5 h-5" />
                 </button>
-                
                 <div className="mb-4 pr-10">
                    <label className="block text-sm font-bold text-slate-700 mb-2">Q{qIndex + 1}. Question Text</label>
                    <textarea required rows="2" value={q.questionText} onChange={(e) => updateQuestion(qIndex, 'questionText', e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 outline-none font-medium bg-slate-50 focus:bg-white resize-none" placeholder="Enter question..."></textarea>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {q.options.map((opt, optIdx) => (
                     <div key={optIdx} className="flex items-center">
-                      <input 
-                        type="radio" name={`correct-${qIndex}`} checked={Number(q.correctOption) === optIdx} onChange={() => updateQuestion(qIndex, 'correctOption', optIdx)}
-                        className="w-5 h-5 mr-3 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                        title="Mark as correct answer"
-                      />
-                      <input 
-                        type="text" required value={opt} onChange={(e) => updateOption(qIndex, optIdx, e.target.value)}
-                        className={`w-full px-4 py-2 rounded-lg border outline-none font-medium transition-colors ${Number(q.correctOption) === optIdx ? 'border-emerald-500 bg-emerald-50/50' : 'border-slate-300 bg-slate-50 focus:bg-white focus:border-blue-500'}`}
-                        placeholder={`Option ${optIdx + 1}`}
-                      />
+                      <input type="radio" name={`correct-${qIndex}`} checked={Number(q.correctOption) === optIdx} onChange={() => updateQuestion(qIndex, 'correctOption', optIdx)} className="w-5 h-5 mr-3 text-emerald-600 focus:ring-emerald-500 cursor-pointer" title="Mark as correct answer" />
+                      <input type="text" required value={opt} onChange={(e) => updateOption(qIndex, optIdx, e.target.value)} className={`w-full px-4 py-2 rounded-lg border outline-none font-medium transition-colors ${Number(q.correctOption) === optIdx ? 'border-emerald-500 bg-emerald-50/50' : 'border-slate-300 bg-slate-50 focus:bg-white focus:border-blue-500'}`} placeholder={`Option ${optIdx + 1}`} />
                     </div>
                   ))}
                 </div>
@@ -1818,10 +1487,6 @@ function AdminTestBuilder({ user, initialData, onCancel, onSave }) {
     </div>
   );
 }
-
-// ==========================================
-// REUSABLE UI COMPONENTS
-// ==========================================
 
 function StatCard({ icon, title }) {
   return (
@@ -1891,13 +1556,9 @@ function CourseGridCard({ title, badge, description, duration, onApply }) {
         </div>
         <h3 className="text-2xl font-extrabold text-white mt-auto relative z-10 tracking-tight">{title}</h3>
       </div>
-      
       <div className="p-8 flex-grow flex flex-col justify-between bg-white relative">
         <p className="text-slate-600 mb-8 leading-relaxed font-medium">{description}</p>
-        <button 
-          onClick={onApply}
-          className="w-full bg-slate-50 hover:bg-slate-900 hover:text-white text-slate-900 font-bold py-4 px-4 rounded-xl transition-all flex items-center justify-center border border-slate-200 group-hover:border-slate-900 shadow-sm"
-        >
+        <button onClick={onApply} className="w-full bg-slate-50 hover:bg-slate-900 hover:text-white text-slate-900 font-bold py-4 px-4 rounded-xl transition-all flex items-center justify-center border border-slate-200 group-hover:border-slate-900 shadow-sm">
           Enroll Now <ArrowRight className="ml-2 h-5 w-5" />
         </button>
       </div>
